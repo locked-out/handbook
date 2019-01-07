@@ -189,7 +189,6 @@ def shunt(tokens):
 
     while len(stack) > 0:
         out.append(stack.pop())
-        # out.append(out[-1] if top == "," else top)
 
     return out
 
@@ -287,7 +286,7 @@ with open("prerequisites.txt") as f:
 
         print()
 
-print(" ".join(courses.keys()))
+print(" ".join(sorted(courses.keys())))
 
 line = input('>')
 while line:
@@ -299,5 +298,3 @@ while line:
             # print(course.code)
             course.how(courses.values())
     line = input('>')
-
-pass

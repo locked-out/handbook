@@ -1,13 +1,14 @@
 from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup as bs
 from time import sleep
-import json, re
+import json
+import re
 
 list_url = 'http://legacy.handbook.unsw.edu.au/vbook2018/brCoursesBySubjectArea.jsp?studyArea=COMP&StudyLevel=Undergraduate'
 
 with urlopen(Request(list_url)) as f:
     html = f.read().decode('utf-8')
-soup = bs(html, 'html.parser')
+soup = bs(html, 'html')
 table = soup.find('table', 'tabluatedInfo')
 links = table.find_all('a')
 
@@ -21,9 +22,8 @@ for link in links:
     with urlopen(Request(url)) as f:
         html = f.read().decode('utf-8')
 
-    soup = bs(html, 'html.parser')
+    soup = bs(html, 'html')
     summary = soup.find('div', 'summary')
-    bs().find
     info = {}
 
     for child in summary.findChildren(recursive=False):
@@ -31,12 +31,10 @@ for link in links:
         try:
             label, value = text.split(":", 1)
         except ValueError:
-            info[label.strip()] = None
+            pass
         else:
             info[label.strip()] = value.strip()
-        # if child.text[:12] == "Prerequisite":
-        #     # print(url, child.text)
-        #     pass
+
     data[code] = info
 
 with open('data.json', 'w') as outfile:

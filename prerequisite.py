@@ -16,6 +16,7 @@ ISSUES:
 
 
 import re
+import json
 
 
 class tcol:
@@ -34,14 +35,17 @@ courses = {}
 
 
 class Course:
-    def __init__(self, code, prerequisite=None):
+    def __init__(self, code, name=None, prerequisite=None):
         self.code = code
+        self.name = name
         self.prerequisite = prerequisite
 
     def __repr__(self):
         return f'<Course {self.code}>'
 
     def how(self, done=[], depth=0):
+        if depth == 0:
+            print(tcol.BOLD + tcol.OKGREEN + self.name + tcol.ENDC, end=' - ')
         if self.prerequisite:
             print('  ' * depth + f'{tcol.OKGREEN}{self.code}{tcol.ENDC}')
             print('  ' * depth + str(self.prerequisite))
@@ -66,8 +70,13 @@ class Prerequisite:
     def collapse(self):
         return self
 
-    def getCourses(self):
-        return [self.course] if self.course else []
+    def getCourses(self, inputSet=None):
+        if not isinstance(inputSet, set):
+            inputSet = set()
+
+        if self.course:
+            inputSet.add(self.course)
+        return inputSet
 
     def eval(self, doneCourses):
         if self.course:
@@ -93,11 +102,13 @@ class CompoundPrereq(Prerequisite):
                 self.nodes.extend(node.nodes)
         return self
 
-    def getCourses(self):
-        out = []
+    def getCourses(self, inputSet=None):
+        if not isinstance(inputSet, set):
+            inputSet = set()
+
         for node in self.nodes:
-            out.extend(node.getCourses())
-        return out
+            node.getCourses(inputSet)
+        return inputSet
 
 
 class PrereqAnd(CompoundPrereq):
@@ -238,9 +249,19 @@ def formPrereqTree(tokens):
 
 ops = ['(?<=\W)or(?=\W)', '(?<=\W)and(?=\W)', '\[', '\]', '\(', '\)', ',']
 nops = ['or', 'and', '[', ']', '(', ')', ',']
-with open("prerequisites.txt") as f:
-    for line in f:
-        subj, prereq = line.strip().rstrip(".").split('=', 1)
+with open("data.json") as f:
+    data = json.load(f)
+
+for subj, info in data.items():
+
+    if subj not in courses:
+        courses[subj] = Course(subj)
+    course = courses[subj]
+    course.name = info["name"]
+
+    prereq = info.get("prerequisite", None)
+
+    if prereq:
         extras = None
         try:
             prereq, extras = prereq.split('.', 1)
@@ -279,9 +300,6 @@ with open("prerequisites.txt") as f:
             print(tcol.HEADER + "collapse" + tcol.ENDC, end=' | ')
             print(tree)
 
-            if subj not in courses:
-                courses[subj] = Course(subj)
-            course = courses[subj]
             course.prerequisite = tree
 
         print()
@@ -295,6 +313,6 @@ while line:
     print(f"{tcol.OKGREEN}Counted:{tcol.ENDC}", ' '.join([i.code for i in done]))
     for name, course in courses.items():
         if course.prerequisite and course.prerequisite.eval(done):
-            # print(course.code)
-            course.how(courses.values())
+            if course not in done and len(course.prerequisite.getCourses()) > 0:
+                course.how(courses.values())
     line = input('>')

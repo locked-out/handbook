@@ -8,23 +8,30 @@ list_url = 'http://legacy.handbook.unsw.edu.au/vbook2018/brCoursesBySubjectArea.
 
 with urlopen(Request(list_url)) as f:
     html = f.read().decode('utf-8')
-soup = bs(html, 'html')
+soup = bs(html, 'lxml')
 table = soup.find('table', 'tabluatedInfo')
 links = table.find_all('a')
 
 data = {}
 
 for link in links:
+
     url = link.attrs['href']
-    code = re.search(r"/(\w*)\.html", url).group(1)
-    sleep(0.5)
+    sleep(0.2)
 
     with urlopen(Request(url)) as f:
         html = f.read().decode('utf-8')
 
-    soup = bs(html, 'html')
+    soup = bs(html, 'lxml')
     summary = soup.find('div', 'summary')
+    title = summary.find_previous_sibling()
+    name, code = title.text.rsplit("-", 1)
+
+    name = name.strip()
+    code = code.strip()
+
     info = {}
+    info["name"] = name
 
     for child in summary.findChildren(recursive=False):
         text = child.text
@@ -33,7 +40,7 @@ for link in links:
         except ValueError:
             pass
         else:
-            info[label.strip()] = value.strip()
+            info[label.strip().lower()] = value.strip()
 
     data[code] = info
 
